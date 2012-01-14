@@ -1,3 +1,23 @@
+zbackup is a backup script written in python that performs backups
+using rsync and ZFS. The backup script runs on the backup server
+and pulls files from clients using rsync and ssh keys.
+
+Features:
+- Fast file tranfer using rsync
+- Data channel encrypted via ssh
+- Incremental backups using rsync and ZFS snapshots
+- Support pruning of old snapshots
+
+Supported Backup Servers:
+Any UNIX Operating System with ZFS*
+
+Supported Backup Clients:
+Any UNIX Operating System with sshd
+
+*Only FreeBSD 9.0 has been tested by the author. In theory
+Solaris should be supported. If anyone is trying to run this script
+on Solaris I'd be very interested to hear if it works.
+
 ==================
 Requirements:
 ==================
