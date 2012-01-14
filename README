@@ -22,7 +22,7 @@ on Solaris I'd be very interested to hear if it works.
 Requirements:
 ==================
 On the backup server:
-FreeBSD 9.0 with zfs
+zfs
 rsync
 python 2.7 or higher
 a zbackup user account
