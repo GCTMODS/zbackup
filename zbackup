@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+
+VERS_MAJOR=0
+VERS_MINOR=0
+
+import os
+import pwd
+import grp
+import sys
+import argparse
+from zbackup.zconfig import parseConfig, finalizeConfig, ConfigParseError, ConfigError
+from zbackup.zfs import ZFSError
+from zbackup.zlog import zloginfo, zlogwarn, zlogerr, zlogdebug, zlogInit, zlogFinal
+from zbackup.zvolume import backupVolume, pruneSnapshots
+from zbackup.config import CONFFILE, CONFDIR
+
+def main(argv):
+   config = {}
+   parser = argparse.ArgumentParser(description="foo")
+   parser.add_argument('volumes', metavar='VOLUMES', nargs='*',
+         help='which volumes to backup')
+   parser.add_argument('-c', '--config-file', 
+         dest='configfile', 
+         default=CONFFILE,
+         help='Config file to use')
+   parser.add_argument('--no-snapshot',
+         action='store_false', dest='snapshot',
+         help="Don't do a snapshot after backing up data")
+   parser.add_argument('--dryrun',
+         action='store_true', dest='dryrun',
+         help="Don't actually do anything (useful with -v)")
+   parser.add_argument('--no-prune',
+         action='store_false', dest='prune',
+         help="Don't prune old snapshots")
+   parser.add_argument('--version',
+         action='version',
+         version='%s %d %d' % (argv[0], VERS_MAJOR, VERS_MINOR))
+   parser.add_argument('--syslog', '-s',
+         action='store_true')
+   parser.add_argument('--email', '-e',
+         action='store_true')
+   parser.add_argument('--noconsole',
+         action='store_false', dest='console')
+   parser.add_argument('-v', '--verbose',
+         dest='verbosity',
+         action='count',
+         help='Output verbosity')
+   args = parser.parse_args(argv[1:])
+
+   if args.verbosity is None:
+      args.verbosity = 0
+   zlogInit(args.verbosity + 1, console=args.console, syslog=args.syslog, email=args.email)
+
+   #Parse main config file
+   parseConfig(args.configfile, config)
+   for d in os.listdir(CONFDIR):
+      if d.endswith('.conf'):
+         #Parse extra config files
+         parseConfig(d, config)
+
+   try:
+      #Finalize config processing
+      finalizeConfig(config)
+      gconf = config['global']
+
+      #Get global config values
+      if args.snapshot is True:
+         if gconf.get('nosnapshots', False):
+            args.snapshot = False
+      if args.prune is True:
+         if gconf.get('noprune', False):
+            args.prune = False
+
+      #Run as localuser and localgroup
+      user = gconf['user']
+      p = pwd.getpwnam(user)
+      uid = p[2]
+      if gconf.has_key('group'):
+         group = gconf['group']
+         gid = grp.getgrnam(group)[2]
+      else:
+         gid = p[3]
+      group = grp.getgrgid(gid)[0]
+
+      zloginfo("Switching to user %s(%d) and group %s(%d)" % (user, uid, group, gid))
+      os.setgid(gid)
+      os.setuid(uid)
+
+      #Create and validate list of volumes
+      if len(args.volumes) == 0:
+         volumes = config.keys()
+         volumes.remove('global')
+      else:
+         for v in args.volumes:
+            if not config.has_key(v):
+               raise ConfigError("`%s' is not a valid volume" % v)
+            elif v == 'global':
+               raise ConfigError("`global' is not valid volume name")
+         volumes = args.volumes
+
+      zloginfo("Will backup the following volumes:")
+      zloginfo("\t%s" % " ".join(volumes))
+
+      #Do the backups
+      for v in volumes:
+         backupVolume(v, config, args.snapshot, args.dryrun)
+         pruneSnapshots(v, config, args.prune, args.dryrun)
+      success = True
+   except Exception as e:
+      success = False
+      zlogerr(e)
+   
+   zlogFinal(success, config)
+
+
+
+if __name__ == "__main__":
+   main(sys.argv)
+
+# vim: set ft=python

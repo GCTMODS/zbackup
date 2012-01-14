@@ -1,0 +1,38 @@
+[global]
+#Specify the maximum number of snapshots to keep
+#around. More snapshots will automatically be
+#pruned. This value is inherited by all volumes
+#that don't specify their own max.
+maxsnapshots = 5
+
+#Url of server (can and should include remote username)
+#This is inherited by all volumes that don't specify their own
+servurl = 'zbackup@myserver.mydomain.com'
+
+#Local user which zbackup will drop permission to for backup operation
+user = zbackup
+#Local group which zbackup will drop permission to for backup operation
+group = zbackup
+
+#Disable zfs snapshots
+#nosnapshots = True
+#Disable snapshot pruning (dangerous! You can quickly run out of space)
+#noprune = True
+
+
+#Email params
+email:to = "myemail@mydomain.com"
+email:from = "zbackup@mybackupserver.mydomain.com"
+email:smtpsrv = "smtp.mydomain.com"
+
+
+[volume music]
+#ZFS file system, if not specified it will default
+#to the volume name
+zfs = tank/music
+#Specify maximum number of snapshots to keep around
+maxsnapshots = 5
+
+[files music]
+/home/myuser/Music
+

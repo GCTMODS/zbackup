@@ -1,0 +1,122 @@
+==================
+Requirements:
+==================
+On the backup server:
+FreeBSD 9.0 with zfs
+rsync
+python 2.7 or higher
+a zbackup user account
+ssh
+
+On the client machines:
+A UNIX operating system
+sshd running
+a zbackup user account with scp access (see below)
+rssh (highly recommended)
+
+
+==================
+Server setup
+==================
+1) Installing the software
+On the server:
+
+$ ./configure
+$ make
+# make install
+
+2) Set up the backup filesystem
+zbackup requires a ZFS filesystem. Use the zpool create command
+to create a new pool. See the ZFS documentation for more
+information on creating zpools and zvolumes.
+
+It is recommended that this zpool be used solely for backups and nothing
+else. If you must share the same pool with something else, use quotas to
+prevent zbackup from filling the entire pool.
+
+3) Create a zbackup user
+Create a user account and optionally a group for zbackup 
+to run as. This user/group must have
+write access to the backup filesystems.
+Be sure to set the zbackup user's shell to /usr/sbin/nologin
+or some equivalent on your system. Do not enable password
+authentication.
+
+4) Give zbackup user ZFS permissions
+The user needs permissions to create and destroy snapshots. Use the 
+following command:
+#zfs allow -ud zbackup snapshot,destroy,mount <FILESYSTEM>
+
+5) Create an ssh key
+You will need to create an ssh key for the zbackup user to access
+client machines. Change the zbackup users shell to /bin/sh and login
+as them. Then run ssh-keygen, do not create a passphrase.
+Finally logout and change the users shell back to /usr/sbin/nologin
+
+On freebsd the relevant commands would be:
+#pw usermod zbackup -s /bin/sh
+#su zbackup
+$ssh-keygen -t rsa
+$exit
+#pw usermod zbackup -s /usr/sbin/nologin
+
+6) Write a zbackup config file
+An example config file is provided in the source distribution with comments.
+The default location for the config file is 
+/etc/zbackup.conf
+Additional config files can also be placed in
+/etc/zbackup.conf.d
+See below for additional information about defining volumes
+
+=====================
+Client Machine Setup
+=====================
+For each client machine you wish to perform backups on
+perform the following:
+
+1) Install rssh on the client (highly recommended)
+zbackup accesses files using rsync over ssh with passwordless
+public access. By default this method of file transfer 
+is very insecure because. If the backup server becomes compromised,
+the adversary has immediate passwordless shell access to all clients.
+
+Rssh allows us to install a shell that allows only rsync access
+by the zbackup user. Install rssh using your package manager. Be sure
+to create an rssh.conf file (/etc/rssh.conf on linux, 
+/usr/local/etc/rssh.conf on FreeBSD) to enable rsync which is usually
+disabled by default.
+
+2) Enable public key authentication and ssh login access for the zbackup user
+You may need to edit your sshd configuration (usually /etc/ssh/sshd_config)
+to enable Public key authentication.
+
+3) Create a zbackup user on the client machine
+The zbackup user on the client will need to access
+files through scp. This user will need read access
+to all of the files and directories you wish to backup.
+Be sure to set the users shell to rssh.
+
+4) Copy the public key from the server
+Install the public ssh key (/home/zbackup/.ssh/id_rsa.pub on the server)
+into your zbackup users authorized_keys file (/home/zbackup/.ssh/authorized_keys on client)
+
+=====================
+Volume creation
+=====================
+zbackup does backups in terms of volumes. A zbackup volume
+is synonymous with a zfs file system. To define a volume, 2
+config file sections are required.
+
+The first is the volume section, which looks like
+[volume VOLNAME]
+This section contains key = value pairs describing volumes.
+See the example config file for details.
+
+The next is the files section, which looks like
+[files VOLNAME]
+This section contains shell glob patterns on each line.
+These are paths on the client machine that will be copied to the 
+zfs filesystem. A second path can be optionally specified to place it
+in a different location in the filesystem.
+
+

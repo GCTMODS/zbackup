@@ -1,0 +1,17 @@
+*.pyc
+*.pyo
+Makefile
+Makefile.in
+aclocal.m4
+py-compile
+build
+config.log
+config.status
+config.guest
+configure
+configure.scan
+install-sh
+missing
+autoscan.log
+autom4te.cache
+python/zbackup/config.py
