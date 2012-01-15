@@ -40,8 +40,11 @@ rssh (highly recommended)
 Server setup
 ==================
 1) Installing the software
-On the server:
+If you checked out from git, you'll need automake 1.11 and autoconf 2.68. If you
+downloaded a tarball with a configure script, you can skip this.
+$ autoreconf -ifv
 
+Configure and install the scripts
 $ ./configure
 $ make
 # make install
