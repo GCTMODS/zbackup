@@ -25,7 +25,7 @@ Requirements:
 On the backup server:
 zfs
 rsync
-python 2.7 or higher
+python 2.6 or higher
 a zbackup user account
 ssh
 

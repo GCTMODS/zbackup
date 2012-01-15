@@ -17,7 +17,7 @@ AS_IF([test "x$RSYNCBIN" != "xrsync"],
       AC_MSG_ERROR(["Could not find rsync binary!"]))
 
 # Checks for libraries.
-AM_PATH_PYTHON([2.7])
+AM_PATH_PYTHON([2.6])
 
 # Checks for header files.
 
